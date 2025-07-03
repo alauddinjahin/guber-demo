@@ -12,6 +12,7 @@ type BrandsMapping = {
 }
 
 export async function getBrandsMapping(): Promise<BrandsMapping> {
+
     const brandConnections = connections
 
     // Create a map to track brand relationships
@@ -21,13 +22,17 @@ export async function getBrandsMapping(): Promise<BrandsMapping> {
         const brand1 = manufacturer_p1.toLowerCase()
         const brands2 = manufacturers_p2.toLowerCase()
         const brand2Array = brands2.split(";").map((b) => b.trim())
+
         if (!brandMap.has(brand1)) {
             brandMap.set(brand1, new Set())
         }
+
         brand2Array.forEach((brand2) => {
+
             if (!brandMap.has(brand2)) {
                 brandMap.set(brand2, new Set())
             }
+
             brandMap.get(brand1)!.add(brand2)
             brandMap.get(brand2)!.add(brand1)
         })
@@ -45,7 +50,6 @@ export async function getBrandsMapping(): Promise<BrandsMapping> {
 
 async function getPharmacyItems(countryCode: countryCodes, source: sources, versionKey: string, mustExist = true) {
     const finalProducts = items
-
     return finalProducts
 }
 
@@ -84,18 +88,23 @@ export async function assignBrandIfKnown(countryCode: countryCodes, source: sour
 
         let matchedBrands = []
         for (const brandKey in brandsMapping) {
-            const relatedBrands = brandsMapping[brandKey]
+            const relatedBrands = brandsMapping[brandKey];
+
             for (const brand of relatedBrands) {
+
                 if (matchedBrands.includes(brand)) {
                     continue
                 }
+
                 const isBrandMatch = checkBrandIsSeparateTerm(product.title, brand)
                 if (isBrandMatch) {
                     matchedBrands.push(brand)
                 }
             }
         }
+
         console.log(`${product.title} -> ${_.uniq(matchedBrands)}`)
+        
         const sourceId = product.source_id
         const meta = { matchedBrands }
         const brand = matchedBrands.length ? matchedBrands[0] : null
