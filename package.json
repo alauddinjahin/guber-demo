@@ -29,7 +29,8 @@
     "new-dash": "nodemon src/new-dashboard.ts --watch false --inspect --exec ts-node",
     "clear:babel-cache": "rimraf -rf ./node_modules/.cache/babel-loader/*",
     "test": "jest --verbose  --forceExit",
-    "report-test": "nodemon src/reports/aggregator-pitch-report/index.ts --watch false --inspect --exec ts-node"
+    "report-test": "nodemon src/reports/aggregator-pitch-report/index.ts --watch false --inspect --exec ts-node",
+    "test-assignment": "ts-node src/test-assignment-tasks.ts"
   },
   "jest": {
     "setupFiles": [
