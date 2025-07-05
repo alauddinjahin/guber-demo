@@ -8,6 +8,7 @@ import items from "../../pharmacyItems.json"
 import connections from "../../brandConnections.json"
 import path from "path"
 import fs from 'fs';
+import { BrandDeduplicator } from "../brand-deduplicator-utils"
 
 // ProductSchema Types to format and store into json file
 type ProductSchema = {
@@ -43,6 +44,7 @@ export async function assignBrandIfKnown(
   const products = await getPharmacyItems(countryCode, source, versionKey, false);
 
   // remove duplications, added rules and set priorities for all inside the class: BrandDeduplicator
+  const deduplicator = new BrandDeduplicator(connections);
 
   // Process products and separate priority results
   const priorityResults: Array<ProductSchema> = [];
@@ -54,11 +56,26 @@ export async function assignBrandIfKnown(
     if (product.m_id) continue;
     
     // assigned brand 
+    const { assignedBrand:brand, matchedBrands } = deduplicator.assignBrand(product.title);
     const sourceId = product.source_id
     const key = `${source}_${countryCode}_${sourceId}`;
-    const uuid = stringToHash(key);    
+    const uuid = stringToHash(key);
+    const result = {uuid, ...product, brand, meta: { matchedBrands }  };    
 
+    // check the priority and store them into priorityResults or regularResults
+    if (brand && deduplicator.isPriorityBrand(brand)) {
+      priorityResults.push(result);
+    } else {
+      regularResults.push(result);
+    }
   }
+
+  // Combine results with priority brands first
+  const finalResults = [...priorityResults, ...regularResults];
+
+// Save results to JSON file
+  const outputPath = path.join(__dirname, './../../brandAssignments.json');
+  fs.writeFileSync(outputPath, JSON.stringify(finalResults, null, 2));
 
   return finalResults;
 }

@@ -38,3 +38,78 @@ const SPECIAL_BRAND_MAPPINGS: Record<string, string> = {
   'babē': 'babe'
 };
 
+export class BrandDeduplicator {
+
+  private brandGroups: Map<string, BrandGroup>;
+  private canonicalMap: Record<string, string>;
+  private brandPatternCache: Map<string, RegExp>;
+  private normalizedTitleCache: Map<string, string>;
+  private connections: any;
+
+  constructor(connections: any) {
+    this.connections = connections;
+    this.brandGroups = new Map();
+    this.canonicalMap = {};
+    this.brandPatternCache = new Map();
+    this.normalizedTitleCache = new Map();
+    this.initializeBrandGraphAndMapping();
+  }
+
+  // brand relationships and build canonical mappings
+  private initializeBrandGraphAndMapping(): void {
+    const brandGraph = new Map<string, Set<string>>();
+
+    // Build the connection graph from JSON file ( brandConnections.json )
+    this.connections.forEach(({ manufacturer_p1, manufacturers_p2 }) => {
+      const brand1 = this.normalizeBrand(manufacturer_p1);
+      const brands2 = manufacturers_p2.split(';').map(b => this.normalizeBrand(b.trim()));
+
+      if (!brandGraph.has(brand1)) {
+        brandGraph.set(brand1, new Set());
+      }
+
+      brands2.forEach(brand2 => {
+
+        if (!brandGraph.has(brand2)) {
+          brandGraph.set(brand2, new Set());
+        }
+
+        brandGraph.get(brand1)!.add(brand2);
+        brandGraph.get(brand2)!.add(brand1);
+      });
+
+    });
+
+    
+  }
+
+
+  private normalizeBrand(brand: string): string {
+
+    // Check cache first
+    const cached = this.normalizedTitleCache.get(brand);
+    if (cached) return cached;
+
+    // Convert to lowercase and normalize Lithuanian chars
+    let normalized = brand
+      .split('')
+      .map(c => LITHUANIAN_CHAR_MAP[c] || c)
+      .join('')
+      .toLowerCase();
+
+    // Special brand mappings
+    for (const [from, to] of Object.entries(SPECIAL_BRAND_MAPPINGS)) {
+      normalized = normalized.replace(new RegExp(from, 'g'), to);
+    }
+
+    normalized = normalized
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    this.normalizedTitleCache.set(brand, normalized);
+    return normalized;
+  }
+
+
+}
