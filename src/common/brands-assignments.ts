@@ -56,7 +56,7 @@ export async function assignBrandIfKnown(
     if (product.m_id) continue;
     
     // assigned brand 
-    const { assignedBrand:brand, matchedBrands } = deduplicator.assignBrand(product.title);
+    const { assignedBrand:brand, matchedBrands } = {};
     const sourceId = product.source_id
     const key = `${source}_${countryCode}_${sourceId}`;
     const uuid = stringToHash(key);

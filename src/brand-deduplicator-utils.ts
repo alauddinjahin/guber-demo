@@ -80,7 +80,15 @@ export class BrandDeduplicator {
 
     });
 
+    // Find connected brand groups
+    const visited = new Set<string>();
     
+    for (const [brand] of brandGraph) {
+      if (!visited.has(brand)) {
+        const component = this.findConnectedComponent(brand, brandGraph, visited);
+        this.createBrandGroup(component);
+      }
+    }
   }
 
 
@@ -110,6 +118,66 @@ export class BrandDeduplicator {
     this.normalizedTitleCache.set(brand, normalized);
     return normalized;
   }
+
+
+  
+  // Find all brands connected to the starting brand using a Breadth First Search (BFS) Algorithm
+  private findConnectedComponent(
+    startBrand: string,
+    graph: Map<string, Set<string>>,
+    visited: Set<string>
+  ): Set<string> {
+
+    const queue = [startBrand]; // initiate quere here
+    visited.add(startBrand);
+    const component = new Set<string>([startBrand]);
+
+    while (queue.length > 0) {
+
+      const current = queue.shift()!; 
+      
+      for (const neighbor of graph.get(current) || []) {
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          component.add(neighbor);
+          queue.push(neighbor);
+        }
+      }
+
+    }
+
+    return component;
+  }
+
+  // Create a brand group and select canonical brand ( master representation for all variations )
+  private createBrandGroup(component: Set<string>): void {
+    const componentArray = Array.from(component);
+    let canonical = null
+
+    // Create the group
+    const group: BrandGroup = {
+      canonical,
+      members: component
+    };
+
+    // Update mappings
+    for (const member of component) {
+      this.brandGroups.set(member, group);
+      this.canonicalMap[member] = canonical;
+    }
+  }
+
+
+
+   // Check if a brand is in our priority lists
+  public isPriorityBrand(brand: string): boolean {
+    const normalizedBrand = this.normalizeBrand(brand);
+    const firstWord = normalizedBrand.split(/\s+/)[0];
+    
+    return FRONT_PRIORITY_TERMS.has(firstWord) || 
+           FRONT_OR_SECOND_TERMS.has(firstWord);
+  }
+
 
 
 }
